@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🖼️ Secure Image Steganography</title>
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Random lock icon as favicon -->
+  <link rel="icon" type="image/svg+xml" href="https://upload.wikimedia.org/wikipedia/commons/4/4e/Font_Awesome_5_solid_lock.svg">
+
+  <style>
+    #encryptedPreview, #decryptedPreview {
+      max-width: 100%;
+      margin-top: 15px;
+      display: none;
+      border: 2px solid #2c5364;
+      border-radius: 10px;
+    }
+    #downloadEncryptedBtn, #downloadDecryptedBtn {
+      margin-top: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🖼️ Secure Image Steganography</h1>
+      <p>Hide and reveal secret messages inside images with AES encryption</p>
+    </header>
+
+    <main>
+      <!-- Encrypt -->
+      <section class="card">
+        <h2>🔒 Encrypt Message</h2>
+        <label>Select PNG Image:</label>
+        <input type="file" id="encryptImage" accept="image/png">
+
+        <label>Enter Secret Message:</label>
+        <input type="text" id="secretMsgImg" placeholder="Your secret...">
+
+        <label>Enter Passcode:</label>
+        <input type="password" id="passImg" placeholder="••••••">
+
+        <button onclick="encryptImage()">Encrypt Image</button>
+        <img id="encryptedPreview">
+        <button id="downloadEncryptedBtn">⬇ Download Encrypted Image</button>
+      </section>
+
+      <!-- Decrypt -->
+      <section class="card">
+        <h2>🔑 Decrypt Message</h2>
+        <label>Select Encrypted PNG:</label>
+        <input type="file" id="decryptImage" accept="image/png">
+
+        <label>Enter Passcode:</label>
+        <input type="password" id="passImgDec" placeholder="••••••">
+
+        <button onclick="decryptImage()">Decrypt</button>
+
+        <h3>📜 Decrypted Message:</h3>
+        <textarea id="outputMsg" readonly></textarea>
+
+        <h3>🖼️ Decrypted Image:</h3>
+        <img id="decryptedPreview">
+        <button id="downloadDecryptedBtn">⬇ Download Decrypted Image</button>
+      </section>
+    </main>
+
+      </div>
+
+  <!-- Hidden Canvas -->
+  <canvas id="canvas"></canvas>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script>
+    function encryptText(msg, password) {
+      return CryptoJS.AES.encrypt(msg, password).toString();
+    }
+
+    function decryptText(cipher, password) {
+      try {
+        const bytes = CryptoJS.AES.decrypt(cipher, password);
+        return bytes.toString(CryptoJS.enc.Utf8);
+      } catch {
+        return "";
+      }
+    }
+
+    function encryptImage() {
+      const file = document.getElementById("encryptImage").files[0];
+      const message = document.getElementById("secretMsgImg").value;
+      const password = document.getElementById("passImg").value;
+      if (!file || !message || !password) { alert("Fill all fields!"); return; }
+
+      const cipher = encryptText(message, password);
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.getElementById("canvas"), ctx = canvas.getContext("2d");
+          canvas.width = img.width; canvas.height = img.height; ctx.drawImage(img, 0, 0);
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+
+          const msgBits = cipher.split("").map(c => c.charCodeAt(0).toString(2).padStart(8,"0")).join("") + "1111111111111110";
+          if (msgBits.length > data.length) { alert("Message too long!"); return; }
+
+          for (let i = 0; i < msgBits.length; i++) {
+            data[i] = (data[i] & 0xFE) | parseInt(msgBits[i]);
+          }
+          ctx.putImageData(imgData, 0, 0);
+
+          const url = canvas.toDataURL("image/png");
+          const preview = document.getElementById("encryptedPreview");
+          preview.src = url;
+          preview.style.display = "block";
+
+          const downloadBtn = document.getElementById("downloadEncryptedBtn");
+          downloadBtn.style.display = "inline-block";
+          downloadBtn.onclick = () => {
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "encryptedImage.png";
+            link.click();
+          };
+
+          alert("Image encrypted successfully!");
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function decryptImage() {
+      const file = document.getElementById("decryptImage").files[0];
+      const password = document.getElementById("passImgDec").value;
+      if (!file || !password) { alert("Provide image + passcode!"); return; }
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.getElementById("canvas"), ctx = canvas.getContext("2d");
+          canvas.width = img.width; canvas.height = img.height; ctx.drawImage(img, 0, 0);
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+
+          let bits = "";
+          let endPos = 0;
+          for (let i = 0; i < data.length; i++) {
+            bits += (data[i] & 1);
+            if (bits.endsWith("1111111111111110")) {
+              bits = bits.slice(0, -16);
+              endPos = i;
+              break;
+            }
+          }
+
+          let cipher = "";
+          for (let i = 0; i < bits.length; i += 8) {
+            cipher += String.fromCharCode(parseInt(bits.slice(i, i+8), 2));
+          }
+
+          const msg = decryptText(cipher, password);
+          document.getElementById("outputMsg").value = msg || "Wrong passcode or corrupted file!";
+
+          if (msg) {
+            // Only show decrypted image if decryption successful
+            for (let i = 0; i <= endPos; i++) {
+              data[i] = data[i] & 0xFE;
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            const url = canvas.toDataURL("image/png");
+            const preview = document.getElementById("decryptedPreview");
+            preview.src = url;
+            preview.style.display = "block";
+
+            const downloadBtn = document.getElementById("downloadDecryptedBtn");
+            downloadBtn.style.display = "inline-block";
+            downloadBtn.onclick = () => {
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = "decryptedImage.png";
+              link.click();
+            };
+          } else {
+            // Hide image and button if decryption fails
+            document.getElementById("decryptedPreview").style.display = "none";
+            document.getElementById("downloadDecryptedBtn").style.display = "none";
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  </script>
+</body>
+</html>

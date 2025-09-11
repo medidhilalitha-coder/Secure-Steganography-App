@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎵 Audio Steganography</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #141e30, #243b55);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border-radius: 18px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+      padding: 35px;
+      width: 90%;
+      max-width: 650px;
+      text-align: center;
+      animation: fadeIn 0.8s ease-in-out;
+    }
+
+    h1 { font-size: 32px; margin-bottom: 10px; }
+    h2 { margin: 25px 0 15px; color: #ffcc70; }
+    h3 { margin-top: 20px; color: #6dd5ed; }
+
+    input, button, textarea {
+      display: block;
+      width: 95%;
+      margin: 12px auto;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #6dd5ed, #2193b0);
+      color: #fff;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      background: linear-gradient(135deg, #ffcc70, #ff6f61);
+      transform: scale(1.05);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+    }
+
+    textarea {
+      background: #111;
+      color: #0f0;
+      font-family: monospace;
+      height: 120px;
+      resize: none;
+    }
+
+    audio {
+      margin-top: 15px;
+      width: 95%;
+      display: none; /* initially hidden */
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #ffcc70;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+    .back-link:hover { color: #6dd5ed; }
+
+    #downloadEncryptedBtn, #downloadDecryptedBtn {
+      display: none;
+      margin-top: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+  <!-- AES Crypto Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>🎵 Audio Steganography</h1>
+    <a class="back-link" href="index.html">⬅ Back to Home</a>
+
+    <h2>🔒 Encrypt</h2>
+    <input type="file" id="encryptAudio" accept="audio/wav">
+    <input type="text" id="secretMsgAudio" placeholder="Enter secret message">
+    <input type="password" id="passAudio" placeholder="Enter passcode">
+    <button onclick="encryptAudio()">Encrypt Audio</button>
+    <audio id="encryptedPreview" controls></audio>
+    <button id="downloadEncryptedBtn">⬇ Download Encrypted Audio</button>
+
+    <h2>🔑 Decrypt</h2>
+    <input type="file" id="decryptAudio" accept="audio/wav,audio/mp3">
+    <input type="password" id="passAudioDec" placeholder="Enter passcode">
+    <button onclick="decryptAudio()">Decrypt</button>
+
+    <h3>📜 Decrypted Message:</h3>
+    <textarea id="outputMsg" readonly></textarea>
+
+    <h3>🎧 Decrypted Audio:</h3>
+    <audio id="decryptedPlayer" controls></audio>
+    <button id="downloadDecryptedBtn">⬇ Download Decrypted Audio</button>
+  </div>
+
+  <script>
+    // AES Encryption / Decryption
+    function encryptText(msg, password) {
+      return CryptoJS.AES.encrypt(msg, password).toString();
+    }
+    function decryptText(cipher, password) {
+      try {
+        const bytes = CryptoJS.AES.decrypt(cipher, password);
+        return bytes.toString(CryptoJS.enc.Utf8);
+      } catch { return ""; }
+    }
+
+    let encryptedBlobURL = null;
+
+    // Encrypt Function
+    function encryptAudio() {
+      const file = document.getElementById("encryptAudio").files[0];
+      const message = document.getElementById("secretMsgAudio").value;
+      const password = document.getElementById("passAudio").value;
+
+      if (!file || !message || !password) {
+        alert("Fill all fields!");
+        return;
+      }
+
+      const cipher = encryptText(message, password);
+      const reader = new FileReader();
+
+      reader.onload = e => {
+        let audioData = new Uint8Array(e.target.result);
+
+        // Convert cipher to bits
+        const msgBits = cipher.split("")
+          .map(c => c.charCodeAt(0).toString(2).padStart(8, "0"))
+          .join("") + "1111111111111110"; // End marker
+
+        if (msgBits.length > audioData.length) {
+          alert("Message too long for this audio file!");
+          return;
+        }
+
+        // Hide bits in LSB
+        for (let i = 0; i < msgBits.length; i++) {
+          audioData[i] = (audioData[i] & 0xFE) | parseInt(msgBits[i]);
+        }
+
+        // Create Blob and preview
+        const blob = new Blob([audioData], { type: "audio/wav" });
+        encryptedBlobURL = URL.createObjectURL(blob);
+
+        const preview = document.getElementById("encryptedPreview");
+        preview.src = encryptedBlobURL;
+        preview.style.display = "block";
+
+        const downloadBtn = document.getElementById("downloadEncryptedBtn");
+        downloadBtn.style.display = "inline-block";
+        downloadBtn.onclick = () => {
+          const link = document.createElement("a");
+          link.href = encryptedBlobURL;
+          link.download = "encryptedAudio.wav";
+          link.click();
+        };
+
+        alert("Audio encrypted successfully!");
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Decrypt Function
+    function decryptAudio() {
+      const file = document.getElementById("decryptAudio").files[0];
+      const password = document.getElementById("passAudioDec").value;
+
+      if (!file || !password) {
+        alert("Provide audio + passcode!");
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = e => {
+        const audioData = new Uint8Array(e.target.result);
+        let bits = "";
+
+        for (let i = 0; i < audioData.length; i++) {
+          bits += (audioData[i] & 1);
+          if (bits.endsWith("1111111111111110")) { // End marker
+            bits = bits.slice(0, -16);
+            break;
+          }
+        }
+
+        let cipher = "";
+        for (let i = 0; i < bits.length; i += 8) {
+          cipher += String.fromCharCode(parseInt(bits.slice(i, i + 8), 2));
+        }
+
+        const msg = decryptText(cipher, password);
+        const outputArea = document.getElementById("outputMsg");
+        outputArea.value = msg || "Wrong passcode or corrupted file!";
+
+        // Only show decrypted audio if decryption was successful
+        if (msg) {
+          const blob = new Blob([audioData], { type: "audio/wav" });
+          const audioURL = URL.createObjectURL(blob);
+
+          const player = document.getElementById("decryptedPlayer");
+          player.src = audioURL;
+          player.style.display = "block";
+
+          const downloadBtn = document.getElementById("downloadDecryptedBtn");
+          downloadBtn.style.display = "inline-block";
+          downloadBtn.onclick = () => {
+            const link = document.createElement("a");
+            link.href = audioURL;
+            link.download = "decryptedAudio.wav";
+            link.click();
+          };
+        } else {
+          // Hide player and button if decryption fails
+          document.getElementById("decryptedPlayer").style.display = "none";
+          document.getElementById("downloadDecryptedBtn").style.display = "none";
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+  </script>
+</body>
+</html>

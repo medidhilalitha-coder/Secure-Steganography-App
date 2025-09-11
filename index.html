@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Secure Steganography App</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      color: #fff;
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+      width: 90%;
+      max-width: 600px;
+      padding: 40px;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    h1 {
+      font-size: 34px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 16px;
+      color: #ddd;
+      margin-bottom: 25px;
+    }
+
+    .nav-btn {
+      display: block;
+      margin: 15px auto;
+      padding: 15px;
+      text-decoration: none;
+      color: #fff;
+      background: linear-gradient(135deg, #2c5364, #203a43);
+      border-radius: 12px;
+      width: 70%;
+      transition: all 0.3s ease;
+      font-weight: bold;
+      font-size: 18px;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-btn:hover {
+      background: linear-gradient(135deg, #6dd5ed, #2193b0);
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    footer {
+      margin-top: 25px;
+      font-size: 13px;
+      color: #aaa;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 Secure Steganography App</h1>
+    <p>Hide your secret messages inside images or audio securely with AES encryption.</p>
+
+    <a class="nav-btn" href="image.html">🖼️ Image Steganography</a>
+    <a class="nav-btn" href="audio.html">🎵 Audio Steganography</a>
+
+  </div>
+</body>
+</html>
