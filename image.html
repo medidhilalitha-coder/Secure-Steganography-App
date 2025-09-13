@@ -2,27 +2,145 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>🖼️ Secure Image Steganography</title>
+  <title> Secure Image Steganography</title>
   <link rel="stylesheet" href="style.css">
-  
-  <!-- Random lock icon as favicon -->
-  <link rel="icon" type="image/svg+xml" href="https://upload.wikimedia.org/wikipedia/commons/4/4e/Font_Awesome_5_solid_lock.svg">
-
   <style>
-    #encryptedPreview, #decryptedPreview {
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #2c5364, #203a43, #0f2027);
+      color: #222;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #fff;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    header p {
+      margin: 5px 0 0;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #1e2e38;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 0.95rem;
+    }
+
+    input, textarea {
+      background: #fff;
+      color: #000;
+    }
+
+    textarea {
+      height: 80px;
+      resize: none;
+    }
+
+    button {
+      background: #2c5364;
+      color: #fff;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.3s;
+      border: none;
+    }
+    button:hover {
+      background: #1e2e38;
+    }
+
+    img {
       max-width: 100%;
-      margin-top: 15px;
-      display: none;
+      margin-top: 10px;
       border: 2px solid #2c5364;
       border-radius: 10px;
+      display: none;
     }
+
     #downloadEncryptedBtn, #downloadDecryptedBtn {
       margin-top: 10px;
       display: none;
     }
+
+    /* Small circular back button */
+    .back-btn {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      transition: all 0.3s ease;
+      z-index: 999;
+    }
+    .back-btn:hover {
+      background: #ff6f61;
+      transform: scale(1.1);
+    }
+
+    /* Responsive */
+    @media(max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    canvas { display:none; }
   </style>
 </head>
 <body>
+  <!-- Back button -->
+  <button class="back-btn" onclick="goHome()">←</button>
+
   <div class="container">
     <header>
       <h1>🖼️ Secure Image Steganography</h1>
@@ -37,7 +155,7 @@
         <input type="file" id="encryptImage" accept="image/png">
 
         <label>Enter Secret Message:</label>
-        <input type="text" id="secretMsgImg" placeholder="Your secret...">
+        <input type="password" id="secretMsgImg" placeholder="••••••••">
 
         <label>Enter Passcode:</label>
         <input type="password" id="passImg" placeholder="••••••">
@@ -66,8 +184,7 @@
         <button id="downloadDecryptedBtn">⬇ Download Decrypted Image</button>
       </section>
     </main>
-
-      </div>
+  </div>
 
   <!-- Hidden Canvas -->
   <canvas id="canvas"></canvas>
@@ -75,127 +192,119 @@
   <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script>
+    function goHome() {
+      // Change this to your homepage file
+      window.location.href = "index.html";
+    }
+
     function encryptText(msg, password) {
       return CryptoJS.AES.encrypt(msg, password).toString();
     }
-
     function decryptText(cipher, password) {
       try {
         const bytes = CryptoJS.AES.decrypt(cipher, password);
         return bytes.toString(CryptoJS.enc.Utf8);
-      } catch {
-        return "";
-      }
+      } catch { return ""; }
     }
 
     function encryptImage() {
-      const file = document.getElementById("encryptImage").files[0];
-      const message = document.getElementById("secretMsgImg").value;
-      const password = document.getElementById("passImg").value;
-      if (!file || !message || !password) { alert("Fill all fields!"); return; }
+      const file=document.getElementById("encryptImage").files[0];
+      const message=document.getElementById("secretMsgImg").value;
+      const password=document.getElementById("passImg").value;
+      if(!file||!message||!password){ alert("Fill all fields!"); return; }
 
-      const cipher = encryptText(message, password);
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.getElementById("canvas"), ctx = canvas.getContext("2d");
-          canvas.width = img.width; canvas.height = img.height; ctx.drawImage(img, 0, 0);
-          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const data = imgData.data;
+      const cipher=encryptText(message,password);
+      const reader=new FileReader();
+      reader.onload=e=>{
+        const img=new Image();
+        img.onload=()=>{
+          const canvas=document.getElementById("canvas"), ctx=canvas.getContext("2d");
+          canvas.width=img.width; canvas.height=img.height; ctx.drawImage(img,0,0);
+          const imgData=ctx.getImageData(0,0,canvas.width,canvas.height); 
+          const data=imgData.data;
 
-          const msgBits = cipher.split("").map(c => c.charCodeAt(0).toString(2).padStart(8,"0")).join("") + "1111111111111110";
-          if (msgBits.length > data.length) { alert("Message too long!"); return; }
+          const msgBits=cipher.split("").map(c=>c.charCodeAt(0).toString(2).padStart(8,"0")).join("")+"1111111111111110";
+          if(msgBits.length>data.length){ alert("Message too long!"); return; }
 
-          for (let i = 0; i < msgBits.length; i++) {
-            data[i] = (data[i] & 0xFE) | parseInt(msgBits[i]);
-          }
-          ctx.putImageData(imgData, 0, 0);
+          for(let i=0;i<msgBits.length;i++) data[i]=(data[i]&0xFE)|parseInt(msgBits[i]);
+          ctx.putImageData(imgData,0,0);
 
-          const url = canvas.toDataURL("image/png");
-          const preview = document.getElementById("encryptedPreview");
-          preview.src = url;
-          preview.style.display = "block";
+          const url=canvas.toDataURL("image/png");
+          const preview=document.getElementById("encryptedPreview");
+          preview.src=url;
+          preview.style.display="block";
 
-          const downloadBtn = document.getElementById("downloadEncryptedBtn");
-          downloadBtn.style.display = "inline-block";
-          downloadBtn.onclick = () => {
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = "encryptedImage.png";
+          const downloadBtn=document.getElementById("downloadEncryptedBtn");
+          downloadBtn.style.display="inline-block";
+          downloadBtn.onclick=()=>{
+            const link=document.createElement("a");
+            link.href=url;
+            link.download="encryptedImage.png";
             link.click();
           };
 
-          alert("Image encrypted successfully!");
+          alert("Image encrypted successfully! Preview ready. Click Download to save.");
         };
-        img.src = e.target.result;
+        img.src=e.target.result;
       };
       reader.readAsDataURL(file);
     }
 
     function decryptImage() {
-      const file = document.getElementById("decryptImage").files[0];
-      const password = document.getElementById("passImgDec").value;
-      if (!file || !password) { alert("Provide image + passcode!"); return; }
+      const file=document.getElementById("decryptImage").files[0];
+      const password=document.getElementById("passImgDec").value;
+      if(!file||!password){ alert("Provide image + passcode!"); return; }
 
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.getElementById("canvas"), ctx = canvas.getContext("2d");
-          canvas.width = img.width; canvas.height = img.height; ctx.drawImage(img, 0, 0);
-          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const data = imgData.data;
-
-          let bits = "";
-          let endPos = 0;
-          for (let i = 0; i < data.length; i++) {
-            bits += (data[i] & 1);
-            if (bits.endsWith("1111111111111110")) {
-              bits = bits.slice(0, -16);
-              endPos = i;
+      const reader=new FileReader();
+      reader.onload=e=>{
+        const img=new Image();
+        img.onload=()=>{
+          const canvas=document.getElementById("canvas"), ctx=canvas.getContext("2d");
+          canvas.width=img.width; canvas.height=img.height; ctx.drawImage(img,0,0);
+          const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+          const data=imgData.data;
+          let bits=""; 
+          let endPos=0;
+          for(let i=0;i<data.length;i++){
+            bits+=(data[i]&1);
+            if(bits.endsWith("1111111111111110")){
+              bits=bits.slice(0,-16);
+              endPos=i;
               break;
             }
           }
-
-          let cipher = "";
-          for (let i = 0; i < bits.length; i += 8) {
-            cipher += String.fromCharCode(parseInt(bits.slice(i, i+8), 2));
+          let cipher="";
+          for(let i=0;i<bits.length;i+=8){
+            cipher+=String.fromCharCode(parseInt(bits.slice(i,i+8),2));
           }
+          const msg=decryptText(cipher,password);
+          document.getElementById("outputMsg").value=msg||"Wrong passcode or corrupted file!";
 
-          const msg = decryptText(cipher, password);
-          document.getElementById("outputMsg").value = msg || "Wrong passcode or corrupted file!";
-
-          if (msg) {
-            // Only show decrypted image if decryption successful
-            for (let i = 0; i <= endPos; i++) {
-              data[i] = data[i] & 0xFE;
-            }
-            ctx.putImageData(imgData, 0, 0);
-
-            const url = canvas.toDataURL("image/png");
-            const preview = document.getElementById("decryptedPreview");
-            preview.src = url;
-            preview.style.display = "block";
-
-            const downloadBtn = document.getElementById("downloadDecryptedBtn");
-            downloadBtn.style.display = "inline-block";
-            downloadBtn.onclick = () => {
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = "decryptedImage.png";
-              link.click();
-            };
-          } else {
-            // Hide image and button if decryption fails
-            document.getElementById("decryptedPreview").style.display = "none";
-            document.getElementById("downloadDecryptedBtn").style.display = "none";
+          // Restore decrypted image
+          for(let i=0;i<=endPos;i++){
+            data[i]=data[i]&0xFE; 
           }
+          ctx.putImageData(imgData,0,0);
+
+          const url=canvas.toDataURL("image/png");
+          const preview=document.getElementById("decryptedPreview");
+          preview.src=url;
+          preview.style.display="block";
+
+          const downloadBtn=document.getElementById("downloadDecryptedBtn");
+          downloadBtn.style.display="inline-block";
+          downloadBtn.onclick=()=>{
+            const link=document.createElement("a");
+            link.href=url;
+            link.download="decryptedImage.png";
+            link.click();
+          };
         };
-        img.src = e.target.result;
+        img.src=e.target.result;
       };
       reader.readAsDataURL(file);
     }
   </script>
 </body>
 </html>
+
