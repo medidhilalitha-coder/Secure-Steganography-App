@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>🎵 Audio Steganography</title>
+  <title>🎵 Secure Audio Steganography</title>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -12,8 +12,42 @@
       color: #fff;
       min-height: 100vh;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: flex-start;
       align-items: center;
+    }
+
+    /* Small circular back button */
+    .back-btn {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      transition: all 0.3s ease;
+      z-index: 999;
+    }
+    .back-btn:hover {
+      background: #ff6f61;
+      transform: scale(1.1);
+    }
+
+    h1 {
+      margin-top: 25px;
+      font-size: 34px;
+      color: #ffcc70;
+      text-align: center;
     }
 
     .container {
@@ -22,15 +56,25 @@
       border-radius: 18px;
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
       padding: 35px;
-      width: 90%;
-      max-width: 650px;
-      text-align: center;
+      margin-top: 25px;
+      width: 95%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      gap: 30px;
       animation: fadeIn 0.8s ease-in-out;
     }
 
-    h1 { font-size: 32px; margin-bottom: 10px; }
-    h2 { margin: 25px 0 15px; color: #ffcc70; }
-    h3 { margin-top: 20px; color: #6dd5ed; }
+    .card {
+      flex: 1;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    h2 { margin-bottom: 15px; color: #6dd5ed; }
+    h3 { margin-top: 20px; color: #ffcc70; }
 
     input, button, textarea {
       display: block;
@@ -70,16 +114,6 @@
       display: none; /* initially hidden */
     }
 
-    .back-link {
-      display: inline-block;
-      margin-bottom: 20px;
-      color: #ffcc70;
-      text-decoration: none;
-      font-weight: bold;
-      transition: color 0.3s;
-    }
-    .back-link:hover { color: #6dd5ed; }
-
     #downloadEncryptedBtn, #downloadDecryptedBtn {
       display: none;
       margin-top: 10px;
@@ -94,32 +128,45 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 <body>
+  <!-- Small Back Button -->
+  <button class="back-btn" onclick="goHome()">←</button>
+
+  <h1>🎵 Audio Steganography</h1>
   <div class="container">
-    <h1>🎵 Audio Steganography</h1>
-    <a class="back-link" href="index.html">⬅ Back to Home</a>
 
-    <h2>🔒 Encrypt</h2>
-    <input type="file" id="encryptAudio" accept="audio/wav">
-    <input type="text" id="secretMsgAudio" placeholder="Enter secret message">
-    <input type="password" id="passAudio" placeholder="Enter passcode">
-    <button onclick="encryptAudio()">Encrypt Audio</button>
-    <audio id="encryptedPreview" controls></audio>
-    <button id="downloadEncryptedBtn">⬇ Download Encrypted Audio</button>
+    <!-- Encrypt Section -->
+    <div class="card">
+      <h2>🔒 Encrypt</h2>
+      <input type="file" id="encryptAudio" accept="audio/wav">
+      <input type="password" id="secretMsgAudio" placeholder="Enter secret message">
+      <input type="password" id="passAudio" placeholder="Enter passcode">
+      <button onclick="encryptAudio()">Encrypt Audio</button>
+      <audio id="encryptedPreview" controls></audio>
+      <button id="downloadEncryptedBtn">⬇ Download Encrypted Audio</button>
+    </div>
 
-    <h2>🔑 Decrypt</h2>
-    <input type="file" id="decryptAudio" accept="audio/wav,audio/mp3">
-    <input type="password" id="passAudioDec" placeholder="Enter passcode">
-    <button onclick="decryptAudio()">Decrypt</button>
+    <!-- Decrypt Section -->
+    <div class="card">
+      <h2>🔑 Decrypt</h2>
+      <input type="file" id="decryptAudio" accept="audio/wav,audio/mp3">
+      <input type="password" id="passAudioDec" placeholder="Enter passcode">
+      <button onclick="decryptAudio()">Decrypt</button>
 
-    <h3>📜 Decrypted Message:</h3>
-    <textarea id="outputMsg" readonly></textarea>
+      <h3>📜 Decrypted Message:</h3>
+      <textarea id="outputMsg" readonly></textarea>
 
-    <h3>🎧 Decrypted Audio:</h3>
-    <audio id="decryptedPlayer" controls></audio>
-    <button id="downloadDecryptedBtn">⬇ Download Decrypted Audio</button>
+      <h3>🎧 Decrypted Audio:</h3>
+      <audio id="decryptedPlayer" controls></audio>
+      <button id="downloadDecryptedBtn">⬇ Download Decrypted Audio</button>
+    </div>
   </div>
 
   <script>
+    function goHome() {
+      // Change this to your actual homepage
+      window.location.href = "index.html";
+    }
+
     // AES Encryption / Decryption
     function encryptText(msg, password) {
       return CryptoJS.AES.encrypt(msg, password).toString();
@@ -150,22 +197,19 @@
       reader.onload = e => {
         let audioData = new Uint8Array(e.target.result);
 
-        // Convert cipher to bits
         const msgBits = cipher.split("")
           .map(c => c.charCodeAt(0).toString(2).padStart(8, "0"))
-          .join("") + "1111111111111110"; // End marker
+          .join("") + "1111111111111110";
 
         if (msgBits.length > audioData.length) {
           alert("Message too long for this audio file!");
           return;
         }
 
-        // Hide bits in LSB
         for (let i = 0; i < msgBits.length; i++) {
           audioData[i] = (audioData[i] & 0xFE) | parseInt(msgBits[i]);
         }
 
-        // Create Blob and preview
         const blob = new Blob([audioData], { type: "audio/wav" });
         encryptedBlobURL = URL.createObjectURL(blob);
 
@@ -206,7 +250,7 @@
 
         for (let i = 0; i < audioData.length; i++) {
           bits += (audioData[i] & 1);
-          if (bits.endsWith("1111111111111110")) { // End marker
+          if (bits.endsWith("1111111111111110")) {
             bits = bits.slice(0, -16);
             break;
           }
@@ -221,7 +265,6 @@
         const outputArea = document.getElementById("outputMsg");
         outputArea.value = msg || "Wrong passcode or corrupted file!";
 
-        // Only show decrypted audio if decryption was successful
         if (msg) {
           const blob = new Blob([audioData], { type: "audio/wav" });
           const audioURL = URL.createObjectURL(blob);
@@ -239,7 +282,6 @@
             link.click();
           };
         } else {
-          // Hide player and button if decryption fails
           document.getElementById("decryptedPlayer").style.display = "none";
           document.getElementById("downloadDecryptedBtn").style.display = "none";
         }
@@ -250,3 +292,4 @@
   </script>
 </body>
 </html>
+
